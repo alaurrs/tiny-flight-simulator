@@ -14,4 +14,4 @@ Through the simulator, users will be able to learn the basics of flight mechanic
 ![Clouds](https://i.imgur.com/3bXb0EB.jpg)
 
 # References
-[Watch video](https://www.youtube.com/watch?v=4QOcCGI6xOU)# Tiny Flight Simulator
+[Watch video](https://www.youtube.com/watch?v=4QOcCGI6xOU)
