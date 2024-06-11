@@ -4,6 +4,7 @@
 //
 
 using UnityEngine;
+using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 
 namespace MFlight.Demo
@@ -23,6 +24,7 @@ namespace MFlight.Demo
         [SerializeField] private Text fuelText = null;
         [SerializeField] private Text verticalSpeedText = null;
         [SerializeField] private Text outOfFuelText = null;
+        [SerializeField] private Button mainMenuButton = null;
 
         private Camera playerCam = null;
 
@@ -39,6 +41,7 @@ namespace MFlight.Demo
             if (outOfFuelText != null)
             {
                 outOfFuelText.gameObject.SetActive(false); // Masquer le texte par défaut
+                mainMenuButton.gameObject.SetActive(false);
             }
         }
 
@@ -105,6 +108,7 @@ namespace MFlight.Demo
             if (outOfFuelText != null)
             {
                 outOfFuelText.gameObject.SetActive(true);
+                mainMenuButton.gameObject.SetActive(true);
             }
 
             if (altitudeText != null) altitudeText.gameObject.SetActive(false);
@@ -124,6 +128,11 @@ namespace MFlight.Demo
         public void SetReferencePlane(Plane planeReference)
         {
             plane = planeReference;
+        }
+
+        public void LoadMainMenu()
+        {
+            SceneManager.LoadScene("Main Menu");
         }
     }
 }
