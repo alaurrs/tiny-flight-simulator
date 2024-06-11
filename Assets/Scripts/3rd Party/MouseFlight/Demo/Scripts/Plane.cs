@@ -127,18 +127,58 @@ namespace MFlight.Demo
             }
         }
 
+        // private void HandleThrottle()
+        // {
+        //     // Utilisation combinée du clavier et de la manette
+        //     // float throttleUpInput = 0f;
+        //     // float throttleDownInput = 0f;
+
+        //     // if (Input.GetButton("ThrottleUp"))
+        //     // {
+        //     //     throttleUpInput = 1f;
+        //     // }
+        //     // if (Input.GetButton("ThrottleDown"))
+        //     // {
+        //     //     throttleDownInput = 1f;
+        //     // }
+
+        //     float throttleUpInput = Input.GetAxis("ThrottleUp");
+        //     float throttleDownInput = Input.GetAxis("ThrottleDown");
+
+        //     throttle += throttleChangeRate * throttleUpInput * Time.deltaTime;
+        //     throttle -= throttleChangeRate * throttleDownInput * Time.deltaTime;
+
+        //     throttle = Mathf.Clamp(throttle, 0f, 100f);
+        // }
         private void HandleThrottle()
         {
+            // Utilisation combinée du clavier et de la manette
+            float throttleUpInput = 0f;
+            float throttleDownInput = 0f;
+
+            // Vérifier les entrées clavier
             if (Input.GetButton("ThrottleUp"))
             {
-                throttle += throttleChangeRate * Time.deltaTime;
+                throttleUpInput = 1f;
             }
             if (Input.GetButton("ThrottleDown"))
             {
-                throttle -= throttleChangeRate * Time.deltaTime;
+                throttleDownInput = 1f;
             }
+
+            // Vérifier les entrées manette
+            throttleUpInput += Mathf.Clamp(Input.GetAxis("ThrottleUpController"), 0, 1);
+            throttleDownInput += Mathf.Clamp(Input.GetAxis("ThrottleDownController"), 0, 1);
+
+            // Ajuster les gaz en fonction des entrées
+            throttle += throttleChangeRate * throttleUpInput * Time.deltaTime;
+            throttle -= throttleChangeRate * throttleDownInput * Time.deltaTime;
+
             throttle = Mathf.Clamp(throttle, 0f, 100f);
         }
+
+
+
 
         private void RunAutopilot(Vector3 flyTarget, out float yaw, out float pitch, out float roll)
         {
