@@ -4,6 +4,7 @@
 //
 
 using UnityEngine;
+using UnityEngine.UI;
 
 namespace MFlight.Demo
 {
@@ -12,6 +13,7 @@ namespace MFlight.Demo
     {
         [Header("Components")]
         [SerializeField] private MouseFlightController controller = null;
+        [SerializeField] private Slider throttleSlider = null; // Ajout de la référence au Slider
 
         [Header("Physics")]
         [Tooltip("Force to push plane forwards with")] public float thrust = 100f;
@@ -27,9 +29,21 @@ namespace MFlight.Demo
         [SerializeField] [Range(-1f, 1f)] private float yaw = 0f;
         [SerializeField] [Range(-1f, 1f)] private float roll = 0f;
 
-        public float Pitch { set { pitch = Mathf.Clamp(value, -1f, 1f); } get { return pitch; } }
-        public float Yaw { set { yaw = Mathf.Clamp(value, -1f, 1f); } get { return yaw; } }
-        public float Roll { set { roll = Mathf.Clamp(value, -1f, 1f); } get { return roll; } }
+        public float Pitch
+        {
+            set { pitch = Mathf.Clamp(value, -1f, 1f); }
+            get { return pitch; }
+        }
+        public float Yaw
+        {
+            set { yaw = Mathf.Clamp(value, -1f, 1f); }
+            get { return yaw; }
+        }
+        public float Roll
+        {
+            set { roll = Mathf.Clamp(value, -1f, 1f); }
+            get { return roll; }
+        }
 
         private Rigidbody rigid;
 
@@ -37,8 +51,12 @@ namespace MFlight.Demo
         private bool pitchOverride = false;
 
         [Header("Fuel Settings")]
-        [SerializeField] private float fuel = 1000f; // Quantité de carburant en unités précises
-        [SerializeField] private float fuelConsumptionRate = 1f; // Consommation de carburant par seconde
+        [SerializeField] private float fuel = 1000f;
+        [SerializeField] private float fuelConsumptionRate = 1f;
+
+        [Header("Throttle Settings")]
+        [SerializeField] private float throttleChangeRate = 20f; // Ajuster la vitesse de changement du throttle
+        [SerializeField] [Range(0f, 100f)] private float throttle = 50f; // Throttle de 0 à 100
 
         private float lastAltitude = 0f;
         private bool isOutOfFuel = false;
@@ -49,6 +67,9 @@ namespace MFlight.Demo
 
             if (controller == null)
                 Debug.LogError(name + ": Plane - Missing reference to MouseFlightController!");
+
+            if (throttleSlider == null)
+                Debug.LogError(name + ": Plane - Missing reference to Throttle Slider!");
         }
 
         private void Update()
@@ -81,8 +102,8 @@ namespace MFlight.Demo
                 pitch = (pitchOverride) ? keyboardPitch : autoPitch;
                 roll = (rollOverride) ? keyboardRoll : autoRoll;
 
-                // Consommation de carburant
-                fuel -= Time.deltaTime * fuelConsumptionRate;
+                // Consommation de carburant en fonction du niveau des gaz
+                fuel -= Time.deltaTime * fuelConsumptionRate * (throttle / 100f);
                 if (fuel < 0f) fuel = 0f;
 
                 // Mise à jour de l'altitude pour calculer la vitesse verticale
@@ -94,7 +115,29 @@ namespace MFlight.Demo
                 {
                     OnOutOfFuel();
                 }
+
+                // Gérer l'accélération et la décélération
+                HandleThrottle();
+
+                // Mettre à jour le Slider
+                if (throttleSlider != null)
+                {
+                    throttleSlider.value = throttle;
+                }
             }
+        }
+
+        private void HandleThrottle()
+        {
+            if (Input.GetButton("ThrottleUp"))
+            {
+                throttle += throttleChangeRate * Time.deltaTime;
+            }
+            if (Input.GetButton("ThrottleDown"))
+            {
+                throttle -= throttleChangeRate * Time.deltaTime;
+            }
+            throttle = Mathf.Clamp(throttle, 0f, 100f);
         }
 
         private void RunAutopilot(Vector3 flyTarget, out float yaw, out float pitch, out float roll)
@@ -116,7 +159,7 @@ namespace MFlight.Demo
         {
             if (!isOutOfFuel)
             {
-                rigid.AddRelativeForce(Vector3.forward * thrust * forceMult, ForceMode.Force);
+                rigid.AddRelativeForce(Vector3.forward * thrust * forceMult * (throttle / 100f), ForceMode.Force);
                 rigid.AddRelativeTorque(new Vector3(turnTorque.x * pitch,
                                                     turnTorque.y * yaw,
                                                     -turnTorque.z * roll) * forceMult,
@@ -124,14 +167,11 @@ namespace MFlight.Demo
             }
         }
 
-        // Méthode pour gérer le comportement lorsque le carburant est épuisé
         private void OnOutOfFuel()
         {
             isOutOfFuel = true;
-            thrust = 0f;
+            throttle = 0f;
             Debug.Log("Out of fuel! The plane has stopped thrusting.");
-            // Ajoute ici toute autre logique que tu souhaites lorsque le carburant est épuisé,
-            // comme afficher un message à l'écran ou jouer une animation.
         }
 
         public float GetFuel()
