@@ -49,6 +49,7 @@ namespace MFlight.Demo
 
         private bool rollOverride = false;
         private bool pitchOverride = false;
+        private bool yawOverride = false; // Ajout du contrôle pour le yaw
 
         [Header("Fuel Settings")]
         [SerializeField] private float fuel = 1000f;
@@ -56,7 +57,7 @@ namespace MFlight.Demo
 
         [Header("Throttle Settings")]
         [SerializeField] private float throttleChangeRate = 20f; // Ajuster la vitesse de changement du throttle
-        [SerializeField] [Range(0f, 100f)] private float throttle = 50f; // Throttle de 0 à 100
+        [SerializeField] [Range(0f, 100f)] public float throttle = 50f; // Throttle de 0 à 100
 
         private float lastAltitude = 0f;
         private bool isOutOfFuel = false;
@@ -78,6 +79,7 @@ namespace MFlight.Demo
             {
                 rollOverride = false;
                 pitchOverride = false;
+                yawOverride = false;
 
                 float keyboardRoll = Input.GetAxis("Horizontal");
                 if (Mathf.Abs(keyboardRoll) > .25f)
@@ -92,13 +94,19 @@ namespace MFlight.Demo
                     rollOverride = true;
                 }
 
+                float keyboardYaw = Input.GetAxis("Yaw");
+                if (Mathf.Abs(keyboardYaw) > .25f)
+                {
+                    yawOverride = true;
+                }
+
                 float autoYaw = 0f;
                 float autoPitch = 0f;
                 float autoRoll = 0f;
-                if (controller != null)
-                    RunAutopilot(controller.MouseAimPos, out autoYaw, out autoPitch, out autoRoll);
+                // if (controller != null)
+                //     RunAutopilot(controller.MouseAimPos, out autoYaw, out autoPitch, out autoRoll);
 
-                yaw = autoYaw;
+                yaw = (yawOverride) ? keyboardYaw : autoYaw;
                 pitch = (pitchOverride) ? keyboardPitch : autoPitch;
                 roll = (rollOverride) ? keyboardRoll : autoRoll;
 
@@ -127,29 +135,6 @@ namespace MFlight.Demo
             }
         }
 
-        // private void HandleThrottle()
-        // {
-        //     // Utilisation combinée du clavier et de la manette
-        //     // float throttleUpInput = 0f;
-        //     // float throttleDownInput = 0f;
-
-        //     // if (Input.GetButton("ThrottleUp"))
-        //     // {
-        //     //     throttleUpInput = 1f;
-        //     // }
-        //     // if (Input.GetButton("ThrottleDown"))
-        //     // {
-        //     //     throttleDownInput = 1f;
-        //     // }
-
-        //     float throttleUpInput = Input.GetAxis("ThrottleUp");
-        //     float throttleDownInput = Input.GetAxis("ThrottleDown");
-
-        //     throttle += throttleChangeRate * throttleUpInput * Time.deltaTime;
-        //     throttle -= throttleChangeRate * throttleDownInput * Time.deltaTime;
-
-        //     throttle = Mathf.Clamp(throttle, 0f, 100f);
-        // }
         private void HandleThrottle()
         {
             // Utilisation combinée du clavier et de la manette
@@ -177,9 +162,6 @@ namespace MFlight.Demo
             throttle = Mathf.Clamp(throttle, 0f, 100f);
         }
 
-
-
-
         private void RunAutopilot(Vector3 flyTarget, out float yaw, out float pitch, out float roll)
         {
             var localFlyTarget = transform.InverseTransformPoint(flyTarget).normalized * sensitivity;
@@ -200,10 +182,18 @@ namespace MFlight.Demo
             if (!isOutOfFuel)
             {
                 rigid.AddRelativeForce(Vector3.forward * thrust * forceMult * (throttle / 100f), ForceMode.Force);
-                rigid.AddRelativeTorque(new Vector3(turnTorque.x * pitch,
-                                                    turnTorque.y * yaw,
-                                                    -turnTorque.z * roll) * forceMult,
-                                        ForceMode.Force);
+                //rigid.AddRelativeTorque(new Vector3(turnTorque.x * pitch,
+                                        //             turnTorque.y * yaw,
+                                        //             -turnTorque.z * roll) * forceMult,
+                                        // ForceMode.Force);
+                float thrustFactor = Mathf.Clamp(throttle / 100, 0.1f, 1f);
+                thrustFactor = Mathf.Pow(thrustFactor, 0.6f); // Ajuste l'exposant selon tes besoins
+
+                // Apply torque based on pitch, yaw, and roll
+                rigid.AddRelativeTorque(Vector3.right * turnTorque.x * pitch * forceMult * thrustFactor, ForceMode.Force);
+                rigid.AddRelativeTorque(Vector3.up * turnTorque.y * yaw * forceMult * thrustFactor, ForceMode.Force);
+                rigid.AddRelativeTorque(Vector3.forward * -turnTorque.z * roll * forceMult * thrustFactor, ForceMode.Force);
+
             }
         }
 
